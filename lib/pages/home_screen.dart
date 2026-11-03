@@ -203,9 +203,111 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ---------- Detail and delete ----------
+
+  Future<void> _confirmDelete(Item item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete item'),
+        content: Text('Delete "${item.title}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await DatabaseHelper.instance.deleteItem(item.id!);
+      await _loadItems();
+    }
+  }
+
+  void _showDetail(Item item) {
+    final hasDesc =
+        item.description != null && item.description!.trim().isNotEmpty;
+    final meta = [
+      item.categoryLabel,
+      if (item.year != null) '${item.year}',
+      item.statusLabel,
+    ].join(' • ');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Center(child: Text(item.title, textAlign: TextAlign.center)),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 420),
+                    child: _image(item, fit: BoxFit.contain),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(meta),
+                if (item.creator != null)
+                  Text('${item.creatorLabel}: ${item.creator}'),
+                if (item.rating != null)
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text('${Item.formatRating(item.rating!)}/10'),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                Text(
+                  hasDesc ? item.description! : 'No description',
+                  style: TextStyle(
+                    fontStyle: hasDesc ? FontStyle.normal : FontStyle.italic,
+                    color: hasDesc ? null : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _confirmDelete(item);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showItemForm(item: item);
+            },
+            child: const Text('Edit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---------- Card ----------
 
-  Widget _image(Item item) {
+  Widget _image(Item item, {BoxFit fit = BoxFit.cover}) {
     final placeholder = Container(
       color: Colors.grey.shade300,
       child: const Center(child: Icon(Icons.image_not_supported, size: 40)),
@@ -214,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (url == null || url.isEmpty) return placeholder;
     return Image.network(
       url,
-      fit: BoxFit.cover,
+      fit: fit,
       width: double.infinity,
       errorBuilder: (context, error, stack) => placeholder,
       loadingBuilder: (context, child, progress) => progress == null
@@ -231,10 +333,17 @@ class _HomeScreenState extends State<HomeScreen> {
         : '${item.categoryLabel} • ${item.year}';
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: InkWell(
+        onTap: () => _showDetail(item),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _image(item)),
+          Expanded(
+            child: Container(
+              color: Colors.grey.shade200,
+              child: _image(item, fit: BoxFit.contain),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -286,6 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
