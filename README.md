@@ -2,7 +2,7 @@
 
 Aplikasi desktop (Windows) untuk menyimpan **waiting list** dan **review** buku, film, anime, game, dan koleksi lain. Dibuat dengan Flutter dan SQLite sebagai tugas UTS Mobile Dev II.
 
-**Status:** dalam pengerjaan (Fase 1: setup project).
+**Status:** dalam pengerjaan (Fase 2: database).
 
 ## Teknologi
 
@@ -17,11 +17,11 @@ Proses pembuatan dicatat per fase di folder [`docs/`](docs/):
 | Fase | Dokumen | Status |
 |---|---|---|
 | 0 | [Perencanaan](docs/01-perencanaan.md) | Selesai |
-| 1 | Setup project | Berjalan |
-| 2 | Database | - |
-| 3 | Tampilan grid | - |
-| 4 | Form CRUD | - |
-| 5 | Cari dan filter | - |
+| 1 | Setup project | Selesai |
+| 2 | Database | Berjalan |
+| 3 | Tampilan utama dan tambah data | - |
+| 4 | Detail, ubah, dan hapus | - |
+| 5 | Cari dan filter (opsional) | - |
 | 6 | Polish | - |
 
 ## Menjalankan aplikasi
