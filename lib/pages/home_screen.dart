@@ -20,6 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Item> _items = [];
 
+  String _query = '';
+  String? _categoryFilter; // null = All
+
   @override
   void initState() {
     super.initState();
@@ -40,8 +43,21 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadItems();
   }
 
-  List<Item> _withStatus(String status) =>
-      _items.where((i) => i.status == status).toList();
+  bool get _filtering => _query.isNotEmpty || _categoryFilter != null;
+
+  List<Item> _withStatus(String status) {
+    return _items.where((i) {
+      if (i.status != status) return false;
+      if (_categoryFilter != null && i.category != _categoryFilter) {
+        return false;
+      }
+      if (_query.isNotEmpty &&
+          !i.title.toLowerCase().contains(_query.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
 
   String? _nullIfEmpty(String text) {
     final t = text.trim();
@@ -400,6 +416,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _filterBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (v) => setState(() => _query = v.trim()),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('All'),
+                selected: _categoryFilter == null,
+                onSelected: (_) => setState(() => _categoryFilter = null),
+              ),
+              for (final c in Item.categories)
+                ChoiceChip(
+                  label: Text(Item.categoryLabelFor(c)),
+                  selected: _categoryFilter == c,
+                  onSelected: (_) => setState(() => _categoryFilter = c),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---------- Tabs ----------
 
   List<Widget> _sectionSlivers(String? title, List<Item> items) {
@@ -434,7 +487,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _finishedTab() {
     final finished = _withStatus('finished');
     if (finished.isEmpty) {
-      return _emptyState('Nothing here yet. Tap + to add your first item.');
+      return _emptyState(_filtering
+        ? 'No matching items.'
+        : 'Nothing here yet. Tap + to add your first item.'
+      );
     }
     return CustomScrollView(slivers: _sectionSlivers(null, finished));
   }
@@ -443,7 +499,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final ongoing = _withStatus('ongoing');
     final notYet = _withStatus('not_yet');
     if (ongoing.isEmpty && notYet.isEmpty) {
-      return _emptyState('Nothing in the queue yet.');
+      return _emptyState(
+        _filtering ? 'No matching items.' : 'Nothing in the queue yet.'
+      );
     }
     return CustomScrollView(
       slivers: [
@@ -464,7 +522,14 @@ class _HomeScreenState extends State<HomeScreen> {
             tabs: [Tab(text: 'Finished'), Tab(text: 'Queue')],
           ),
         ),
-        body: TabBarView(children: [_finishedTab(), _queueTab()]),
+        body: Column(
+          children: [
+            _filterBar(),
+            Expanded(
+              child: TabBarView(children: [_finishedTab(), _queueTab()]),
+            ),
+          ],
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _showItemForm(),
           tooltip: 'Add item',
