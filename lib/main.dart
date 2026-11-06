@@ -11,5 +11,6 @@ void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: HomeScreen(),
+    title: 'Collection Catalog',
   ));
 }
